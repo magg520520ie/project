@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>溫溼度監控</title>
+    <link rel="stylesheet" href="c3.css">
+    <script src="d3-5.4.0.min.js"></script>
+    <script src="c3.min.js"></script>
+    <style>
+        .col {
+            color: red;
+            font-size: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <input type="button" value="溫度" onclick="autoChart_t()">
+    <input type="button" value="溼度" onclick="autoChart_h()">
+    <input type="button" value="狀態" onclick="relay()">
+    <div id="chart1"></div>
+    <b>溫度:</b><input id="temp" class="col" type="text" readonly="readonly">
+    <div id="chart2"></div>
+    濕度:<input id="humid" class="col" type="text" readonly="readonly"><br>
+    電扇狀態:<input id="state" class="col" type="text" readonly="readonly">
+
+</body>
+
+</html>
+<script>
+    var A0s;
+    var A1s;
+    var ip = "cloud.arest.io/CTNK";
+    var order = [0, 0, 0];
+    var chart1;
+    var chart2;
+    
+    window.onload = () => {
+        A0s = [];
+        A1s = [];
+        chart1 = c3.generate({          //產生溫度圖表
+            bindto: "#chart1",
+            data: {
+                columns: [
+                    ['temperature']
+                ]
+            }
+        });
+        chart2 = c3.generate({          //產生濕度圖表
+            bindto: "#chart2",
+            data: {
+                columns: [
+                    ["humidity"]
+                ]
+            }
+        });
+    }
+    function update_temperature_Chart() {   //溫度Function
+        fetch('https://' + ip + '/events')
+            .then(function (response) {
+                return response.json();   //回傳json格式
+            })
+            .then(function (data) {       //回傳資料
+                var today = new Date(Date.now());   
+                today.setMinutes(today.getMinutes()-1);
+                //console.log(today.toUTCString());                               //一分鐘內的數據
+                for(d in data){
+	                if( new Date(data[d].timestamp) > today && data[d].name == "temperature"){
+                    //判斷時間是否為1分鐘內的資料，並且資料為溫度的數據
+                        A0s.push(data[d].data);                                 //將資料放進A0s陣列中
+                        document.getElementById("temp").value = data[d].data;   //顯示最後溫度    
+                    }
+                }
+                chart1.load({
+                    columns: [
+                        ['temperature'].concat(A0s)
+                    ]
+                });
+            });
+    }
+    function update_humidity_Chart() {      //濕度Function
+        console.log("update_humidity_Chart");
+
+        fetch('https://' + ip + '/events')
+            .then(function (response) {
+                return response.json();     //回傳json格式
+            })
+            .then(function (data) {         //回傳資料
+                var today = new Date(Date.now());
+                today.setMinutes(today.getMinutes()-1);                         //一分鐘內的數據
+                for(d in data){
+	                if( new Date(data[d].timestamp) > today && data[d].name == "humidity"){
+                    //判斷時間是否為1分鐘內的資料，並且資料為濕度的數據
+                        A1s.push(data[d].data);                                 //將資料放進A1s陣列中
+                        document.getElementById("humid").value = data[d].data;  //顯示最後濕度
+                    }
+                }
+                // A1s = A1s.concat(data.humidity);
+                chart2.load({
+                    columns: [
+                        ['humidity'].concat(A1s)
+                    ]
+                });
+            });
+    }
+    function get_relay() {                      //繼電器Function
+        fetch("https://cloud.arest.io/CTNK/relay")
+            .then(function (response) {
+                return response.json();         //回傳json格式
+            })
+            .then(function (data) {             //回傳資料
+                if (data.relay) {               //當data.relay為1時，顯示開啟
+                    document.getElementById("state").value = "開啟";
+                }
+                else {                          //當data.relay為0時，顯示關閉
+                    document.getElementById("state").value = "關閉";
+                }
+            });
+    }
+    function autoChart_t() {        //當按下溫度button觸發此Function
+        order[0] = !order[0];       //將order[0]原本的值反向
+    }
+    function autoChart_h() {        //當按下濕度button觸發此Function
+        order[1] = !order[1];       //將order[1]原本的值反向
+
+    }
+    function relay() {              //當按下狀態button觸發此Function
+        order[2] = !order[2];       //將order[2]原本的值反向
+    }
+
+    var inx = 0;
+    setInterval(() => {
+        var funs = [update_temperature_Chart, update_humidity_Chart, get_relay];
+        if (order[inx])
+        //判斷order陣列的值，當order[inx]等於1時，就觸發所對應的function
+            funs[inx]();
+        inx = ++inx % 3;    //將inx家1後再取餘數，inx等於0-->1-->2-->0-->1-->2.....
+
+    }, 5000);               //每5秒鐘重複觸發
+</script>
