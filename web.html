@@ -20,13 +20,17 @@
 <body>
     <input type="button" value="溫度" onclick="autoChart_t()">
     <input type="button" value="溼度" onclick="autoChart_h()">
-    <input type="button" value="狀態" onclick="relay()">
-    <div id="chart1"></div>
-    <b>溫度:</b><input id="temp" class="col" type="text" readonly="readonly">
-    <div id="chart2"></div>
+    <input type="button" value="狀態" onclick="relay()"><br>
+    <br>
+    溫度:<input id="temp" class="col" type="text" readonly="readonly"><br>
     濕度:<input id="humid" class="col" type="text" readonly="readonly"><br>
-    電扇狀態:<input id="state" class="col" type="text" readonly="readonly">
+    電扇:<input id="state" class="col" type="text" readonly="readonly">
+    <br>
+    <div id="chart1"></div>
+ 
 
+    <div id="chart2"></div>
+    
 </body>
 
 </html>
@@ -125,7 +129,7 @@
     }
     function autoChart_h() {        //當按下濕度button觸發此Function
         order[1] = !order[1];       //將order[1]原本的值反向
-
+ 
     }
     function relay() {              //當按下狀態button觸發此Function
         order[2] = !order[2];       //將order[2]原本的值反向
